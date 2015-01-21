@@ -3,15 +3,15 @@ use strict;
 use vars qw($VERSION %IRSSI);
 $VERSION = "2003120617";
 %IRSSI = (
-    authors     => "Stefan 'tommie' Tomanek",
-    contact     => "stefan\@pico.ruhr.de",
-    name        => "multipaste",
-    description => "Helps pasting multiple lines to a channel",
+    authors     => "Rocky Assad",
+    contact     => "r\@cky.bz",
+    name        => "gistpaste",
+    description => "Helps pasting multiple lines to a channel via gist",
     license     => "GPLv2",
     url         => "",
     changed     => "$VERSION",
     modules     => "",
-    commands    => "multipaste"
+    commands    => "gistpaste"
 );
 
 use Irssi 20020324;
@@ -19,7 +19,7 @@ use vars qw(%item);
 
 sub sig_send_text ($$$) {
     my ($line, $server, $witem) = @_;
-    return unless (Irssi::settings_get_bool('multipaste_auto'));
+    return unless (Irssi::settings_get_bool('gistpaste_auto'));
     return unless (ref $server);
     return unless ($witem && ($witem->{type} eq 'CHANNEL' || $witem->{type} eq 'QUERY'));
     $line =~ s/\t/    /g;
@@ -44,8 +44,8 @@ sub sig_send_text ($$$) {
 
 sub sig_send_command ($$$) {
     my ($line, $server, $witem) = @_;
-    return if ($line =~ /^.multipaste/);
-    return unless (Irssi::settings_get_bool('multipaste_auto'));
+    return if ($line =~ /^.gistpaste/);
+    return unless (Irssi::settings_get_bool('gistpaste_auto'));
     return unless (ref $witem && ($witem->{type} eq 'CHANNEL' || $witem->{type} eq 'QUERY'));
     if (%item && $item{waiting}) {
         %item = ();
@@ -70,25 +70,25 @@ sub sig_send_command ($$$) {
 
 
 sub send_item {
-    my $limit = Irssi::settings_get_int('multipaste_limit');
+    my $limit = Irssi::settings_get_int('gistpaste_limit');
     my $server = Irssi::server_find_tag($item{server});
     my $channel = $server->window_item_find($item{channel});
     my $lines = scalar( split(/\n/, $item{text}) );
     if ($limit > 0 && $lines > $limit) {
         unless ($item{confirmed}) {
-            $channel->print('%B>>%n Do you want to paste '.$lines.' lines? Enter "/multipaste" to proceed', MSGLEVEL_CLIENTCRAP);
+            $channel->print('%B>>%n Do you want to paste '.$lines.' lines? Enter "/gistpaste" to proceed', MSGLEVEL_CLIENTCRAP);
             $item{waiting} = 1;
             Irssi::timeout_remove($item{timeout});
             return;
         }
     }
-    my $prefix = Irssi::settings_get_str('multipaste_prefix');
+    my $prefix = Irssi::settings_get_str('gistpaste_prefix');
     my $prefix2 = '';
     $prefix = $item{prefix}.': '.$prefix if $item{prefix};
     $prefix2 = $item{prefix}.': ' if $item{prefix};
     if (scalar( split(/\n/, $item{text}) ) > 1) {
         ##Irssi::command("BIND tab word_completion");
-        my $embrace = Irssi::settings_get_bool('multipaste_embrace');
+        my $embrace = Irssi::settings_get_bool('gistpaste_embrace');
         my $gistfile = 'gistfile';
         unlink $gistfile;
         open(FILE, ">> $gistfile") || die "problem opening $gistfile\n";
@@ -124,7 +124,7 @@ sub paste ($$$) {
     $item{timeout} = Irssi::timeout_add($timeout, \&send_item, undef);
 }
 
-sub cmd_multipaste ($$$) {
+sub cmd_gistpaste ($$$) {
     my ($args, $server, $witem) = @_;
     return unless (%item && $item{waiting});
     $item{confirmed} = 1;
@@ -141,11 +141,11 @@ sub sig_word_complete ($$$$$) {
     }
 }
 
-Irssi::settings_add_bool($IRSSI{name}, 'multipaste_auto', 1);
-Irssi::settings_add_int($IRSSI{name}, 'multipaste_limit', 0);
-Irssi::settings_add_bool($IRSSI{name}, 'multipaste_embrace', 1);
-Irssi::settings_add_str($IRSSI{name}, 'multipaste_prefix', '');
-Irssi::command_bind('multipaste', \&cmd_multipaste);
+Irssi::settings_add_bool($IRSSI{name}, 'gistpaste_auto', 1);
+Irssi::settings_add_int($IRSSI{name}, 'gistpaste_limit', 0);
+Irssi::settings_add_bool($IRSSI{name}, 'gistpaste_embrace', 1);
+Irssi::settings_add_str($IRSSI{name}, 'gistpaste_prefix', '');
+Irssi::command_bind('gistpaste', \&cmd_gistpaste);
 Irssi::signal_add('send text', 'sig_send_text');
 Irssi::signal_add('send command', 'sig_send_command');
 Irssi::signal_add_first('complete word', 'sig_word_complete');
